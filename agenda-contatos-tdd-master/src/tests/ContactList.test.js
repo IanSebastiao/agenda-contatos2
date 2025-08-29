@@ -2,6 +2,7 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import ContactList from '../components/ContactList';
 import * as service from '../services/contactService';
 import { MemoryRouter } from 'react-router-dom';
+import ContactForm from '../components/ContactForm';
 
 jest.mock('../services/contactService');
 
@@ -34,10 +35,23 @@ test('exibe lista de contatos', async () => {
 
     renderWithRouter(<ContactList />);
 
+
     await waitFor(() => {
-        expect(screen.getByText('Ana')).toBeInTheDocument();
-        expect(screen.getByText('João')).toBeInTheDocument();
+        //Verifica se a tabela ou cards estão presentes
+        expect(screen.getByRole('table')).toBeInTheDocument();
+        expect(screen.getByText('Lista de Contatos')).toBeInTheDocument();
     });
+
+    //Verifica se os nomes estão presentes (usando getAllByText ja que há multiplas ocorrências)
+    const anaElements = screen.getAllByText('Ana');
+    const joaoElements= screen.getAllByText('João');
+
+    expect(anaElements.length).toBeGreaterThan(0);
+    expect(joaoElements.length).toBeGreaterThan(0);
+
+    //Verificar se pelo menos um elemento de cada esta visivel
+    expect(anaElements[0]).toBeInTheDocument();
+    expect(joaoElements[0]).toBeInTheDocument();
 });
 
 test('deleta um contato ao clicar em "Remover"', async () => {
@@ -45,22 +59,59 @@ test('deleta um contato ao clicar em "Remover"', async () => {
     service.getContacts.mockResolvedValue([
         { id: '1', nome: 'Ana', email: 'ana@email.com', telefone: '123' },
     ]);
-    service.deleteContact = deleteContactMock;
+    service.deleteContact = deleteContactMock.mockResolvedValue({});
 
     renderWithRouter(<ContactList />);
 
+    //Esoera o contato ser carregado verificado um elemento unico
+    await screen.findByText('Lista de Contatos');
+
+
+    //Verificar que o contato está presente antes de deletar 
+    const anaElementsBefore = screen.getAllByText('Ana')
+    expect(anaElementsBefore.length).toBeGreaterThan(0);
+
+    //Encontrar todos os botões de remover e clicar no primeiro
+    const removeButtons = screen.getAllByTitle(/remover/i);
+    fireEvent.click(removeButtons[0]);
+
     await waitFor(() => {
-        expect(screen.getByText('Ana')).toBeInTheDocument();
+        expect(deleteContactMock).toHaveBeenCalledWith('1');
     });
 
-    // Dispara o clique
-    fireEvent.click(screen.getByText(/remover/i));
-
-    // Garante que a função de serviço foi chamada
-    expect(deleteContactMock).toHaveBeenCalledWith('1');
-
-    // Aguarda atualização da UI (removeu o contato)
+    //Verifica se a função de deletar foi chamada
     await waitFor(() => {
-        expect(screen.queryByText('Ana')).not.toBeInTheDocument();
+        const anaElementsAfter = screen.queryAllByText('Ana')
+        expect(anaElementsAfter.length).toBe(0);
+    })
+
+});
+
+test('atualiza contato existente', () => {
+    const handleSubmit = jest.fn();
+    const contatoExistente = {
+        nome: 'Ana',
+        email: 'ana@email.com',
+        telefone: '123',
+    };
+
+    render(<ContactForm contact={contatoExistente} onSubmit={handleSubmit} />);
+
+    fireEvent.change(screen.getByLabelText(/nome/i), { target: { value: 'Ana Paula'} });
+    fireEvent.submit(screen.getByRole('form'));
+
+    expect(handleSubmit).toHaveBeenCalledWith({
+        nome: 'Ana Paula',
+        email: 'ana@email.com',
+        telefone: '123',
     });
+});
+
+//Limpar mocks após os testes
+afterEach(() => {
+    jest.clearAllMocks();
+});
+
+afterAll(() => {
+    jest.restoreAllMocks();
 });
