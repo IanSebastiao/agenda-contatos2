@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import formatPhone from '../utils/formatPhone';
 
 const ContactForm = ({ contact = {}, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -18,23 +19,6 @@ const ContactForm = ({ contact = {}, onSubmit }) => {
       setFormData({ ...formData, [name]: value });
     }
   };
-
-  const formatPhone = (phone) => {
-    // Remove tudo que não for número
-    const onlyNums = phone.replace(/\D/g, '');
-
-    if (onlyNums.length <= 10) {
-      // Telefone fixo (8 dígitos)
-      return onlyNums
-        .replace(/^(\d{2})(\d)/, '($1) $2')
-        .replace(/(\d{4})(\d)/, '$1-$2');
-    } else {
-      // Celular (9 dígitos)
-      return onlyNums
-        .replace(/^(\d{2})(\d)/, '($1) $2')
-        .replace(/(\d{1})(\d{4})(\d)/, '$1 $2-$3');
-    }
-  }
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -83,7 +67,7 @@ const ContactForm = ({ contact = {}, onSubmit }) => {
           type="tel"
           id="telefone"
           name="telefone"
-          value={formData.telefone}
+          value={formatPhone(formData.telefone)}
           onChange={handleChange}
           maxLength="15"
           className={`form-control ${errors.telefone ? 'is-invalid' : ''}`}

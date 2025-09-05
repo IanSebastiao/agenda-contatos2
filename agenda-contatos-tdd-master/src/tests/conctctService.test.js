@@ -98,7 +98,7 @@ describe('Contact Service', () => {
                 telefone: '11999999999',
             };
 
-            // Configura o retorno simulado do Supabase
+            // Configura a cadeia completa de métodos do Supabase
             const mockSelect = jest.fn().mockResolvedValue({
                 data: [fakeContact],
                 error: null,
@@ -108,14 +108,16 @@ describe('Contact Service', () => {
                 select: mockSelect
             });
 
-            supabase.from.mockReturnValue({ insert: mockInsert });
+            supabase.from.mockReturnValue({
+                insert: mockInsert
+            });
 
             const result = await addContact(fakeContact);
 
             expect(supabase.from).toHaveBeenCalledWith('contatos');
             expect(mockInsert).toHaveBeenCalledWith([{
                 ...fakeContact,
-                telefone: '11999999999' //Telefone ja formatado (sem caracteres nao numericos)
+                telefone: '11999999999' // telefone já formatado (sem caracteres não numéricos)
             }]);
             expect(mockSelect).toHaveBeenCalledWith('*');
             expect(result).toEqual(fakeContact);
@@ -125,26 +127,30 @@ describe('Contact Service', () => {
             const fakeContact = {
                 nome: 'João',
                 email: 'joao@email.com',
-                telefone: '11999999999',
+                telefone: '11999999998',
             };
 
+            // Configura a cadeia completa com erro
             const mockSelect = jest.fn().mockResolvedValue({
                 data: null,
                 error: new Error('Erro ao inserir'),
             });
 
-             const mockInsert = jest.fn().mockReturnValue({
+            const mockInsert = jest.fn().mockReturnValue({
                 select: mockSelect
             });
 
-            supabase.from.mockReturnValue({ insert: mockInsert });
+            supabase.from.mockReturnValue({
+                insert: mockInsert
+            });
 
             await expect(addContact(fakeContact)).rejects.toThrow('Erro ao inserir');
 
+            // Verifica se a cadeia de métodos foi chamada corretamente
             expect(supabase.from).toHaveBeenCalledWith('contatos');
             expect(mockInsert).toHaveBeenCalledWith([{
                 ...fakeContact,
-                telefone: '11999999999' //Telefone ja formatado (sem caracteres nao numericos)
+                telefone: '11999999998'
             }]);
             expect(mockSelect).toHaveBeenCalledWith('*');
         });
@@ -172,7 +178,7 @@ describe('Contact Service', () => {
             expect(supabase.from).toHaveBeenCalledWith('contatos');
             expect(mockUpdate).toHaveBeenCalledWith({
                 ...contact,
-                telefone: '11999999999' 
+                telefone: '11999999999'
             });
             expect(mockEq).toHaveBeenCalledWith('id', id);
         });

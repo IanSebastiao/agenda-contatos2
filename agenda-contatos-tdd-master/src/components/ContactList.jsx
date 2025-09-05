@@ -1,20 +1,37 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { deleteContact, getContacts } from '../services/contactService';
+import formatPhone from '../utils/formatPhone';
 
 const ContactList = () => {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [contactToDelete, setContactToDelete] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  const handleDelete = async (id) => {
+  const handleDeleteClick = (contact) => {
+    setContactToDelete(contact);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
     try {
-      await deleteContact(id);
-      setContacts((prev) => prev.filter((c) => c.id !== id));
+      await deleteContact(contactToDelete.id);
+      setContacts((prev) => prev.filter((c) => c.id !== contactToDelete.id));
+      setShowDeleteModal(false);
+      setContactToDelete(null);
     } catch (err) {
       setError('Erro ao excluir contato');
       console.error(err);
+      setShowDeleteModal(false);
+      setContactToDelete(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setContactToDelete(null);
   };
 
   useEffect(() => {
@@ -62,6 +79,35 @@ const ContactList = () => {
 
   return (
     <div className="container mt-4">
+      {/* Modal de confirmação de exclusão */}
+      {showDeleteModal && contactToDelete && (
+        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Confirmar Exclusão</h5>
+                <button type="button" className="btn-close" onClick={handleDeleteCancel}></button>
+              </div>
+              <div className="modal-body">
+                <p>
+                  Tem certeza que deseja excluir o contato <strong>"{contactToDelete.nome}"</strong>?
+                  <br />
+                  <span className="text-muted">Esta ação não pode ser desfeita.</span>
+                </p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={handleDeleteCancel}>
+                  Cancelar
+                </button>
+                <button type="button" className="btn btn-danger" onClick={handleDeleteConfirm}>
+                  Excluir
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Lista de Contatos</h2>
         <div>
@@ -88,9 +134,12 @@ const ContactList = () => {
                 <tr key={contact.id}>
                   <td>
                     <strong>{contact.nome}</strong>
+                    {contact.favorito && (
+                      <span className="ms-2 text-warning">★</span>
+                    )}
                   </td>
                   <td>{contact.email}</td>
-                  <td>{contact.telefone}</td>
+                  <td>{formatPhone(contact.telefone)}</td>
                   <td className="text-end">
                     <div className="d-flex gap-2 justify-content-end">
                       <Link
@@ -102,7 +151,7 @@ const ContactList = () => {
                       </Link>
                       <button
                         className="btn btn-outline-danger btn-sm"
-                        onClick={() => handleDelete(contact.id)}
+                        onClick={() => handleDeleteClick(contact)}
                         title="Remover"
                       >
                         <i className="bi bi-trash"></i>
@@ -137,11 +186,10 @@ const ContactList = () => {
                       </p>
                       <p className="card-text text-muted small">
                         <i className="bi bi-telephone me-1"></i>
-                        {contact.telefone}
+                        {formatPhone(contact.telefone)}
                       </p>
                     </div>
                     <div className="d-flex gap-2">
-
                       <Link
                         to={`/editar/${contact.id}`}
                         className="btn btn-outline-primary btn-sm"
@@ -149,10 +197,9 @@ const ContactList = () => {
                       >
                         <i className="bi bi-pencil-square"></i>
                       </Link>
-
                       <button
                         className="btn btn-outline-danger btn-sm"
-                        onClick={() => handleDelete(contact.id)}
+                        onClick={() => handleDeleteClick(contact)}
                         title="Remover"
                       >
                         <i className="bi bi-trash"></i>
